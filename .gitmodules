@@ -1,0 +1,3 @@
+[submodule "openscad-iso-metric-fasteners"]
+	path = openscad-iso-metric-fasteners
+	url = git@github.com:LoganBarnett/openscad-iso-metric-fasteners.git
