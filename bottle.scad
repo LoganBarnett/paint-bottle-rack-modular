@@ -3,6 +3,8 @@
 // always incomplete. These measurements are taken with my own calipers.
 
 
+// I measured 26mm diameter, but add a little more.
+bottleBodyDiameterVallejo=27.0;
 bottleCapHeight=28;
 // Vallejo, Army Painter, and Reaper all use the same cap sizes.
 module bottleCap() {
@@ -23,7 +25,6 @@ module bottleCap() {
 // should serve as decent approximations though. Wouldn't it be swell to get
 // this information from the source?!
 module bottleVallejo() {
-  bodyDiameter=24.5;
   height=77.5;
   let (
     bodyHeight = height - bottleCapHeight
@@ -35,7 +36,7 @@ module bottleVallejo() {
       ]) {
         bottleCap();
       }
-      cylinder(d=bodyDiameter, h=bodyHeight, center = true);
+      cylinder(d=bottleBodyDiameterVallejo, h=bodyHeight, center = true);
     }
   }
 }
