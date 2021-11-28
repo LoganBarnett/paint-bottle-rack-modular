@@ -50,6 +50,13 @@ cradleRadius=cradleThickness + (bottleBodyDiameterVallejo / 2) / apothemFactor;
 cradleApothem=cradleRadius * apothemFactor;
 cradleLength=50;
 cradleAngle=35;
+cradleHandOffset=cos(90 + cradleAngle) * cradleApothem * 2;
+cradleFloorOffset=
+  -cos(90 + cradleAngle) * cradleRadius + cradleRadius
+  // Keep the corners of the arms from dipping below the positive Z axis.
+  /* + cos(cradleAngle) * cradleThickness */
+  /* - cos(90 + cradleAngle) * cradleLength */
+  ;
 frameWidth=10;
 frameDepth=10;
 jointHeight=10;
@@ -72,7 +79,7 @@ module fourLegsFrame() {
   }
 }
 
-module hexCradle() {
+module hexCradle(reducedMaterial) {
   difference() {
     let($fn=6) {
       color("red")
@@ -80,14 +87,34 @@ module hexCradle() {
     }
     translate([0, 0, 10])
       bottleVallejo();
+    // THis still needs some work. I'd like it to play nice with the hands and
+    // also work two dimensionally across the surface. I do need to verify
+    // whether or not this requires additional supports, which might make this
+    // counterproductive.
+    if(reducedMaterial) {
+      let(optimizationSize=5) {
+        for(x=[0:optimizationSize * pow(2, 1/2) + cradleThickness:cradleLength]) {
+          for(a=[0:60:360-60]) {
+            translate([0, 0, x - cradleLength / 2]) {
+              rotate(a=a, v=[0, 0, a])
+                rotate(a=45, v=[0, 1, 0])
+                cube(
+                  [optimizationSize, cradleRadius * 2 + zPeace, optimizationSize],
+                  center = true
+                );
+            }
+          }
+        }
+      }
+    }
   }
 }
 
 
-module hexTiltedCradle() {
+module hexTiltedCradle(reducedMaterial) {
   difference() {
     rotate(a=90 + cradleAngle, v=[1,0,0]) {
-      hexCradle();
+      hexCradle(reducedMaterial);
     }
   }
 }
@@ -102,8 +129,7 @@ module hexHands(thickness) {
     // radius is also the height, which we use as a z offset here. I don't quite
     // understand why it needs to be divided by two.
     zOffset = -cradleApothem / 2,
-    yOffset = -cos(90 + cradleAngle) * cradleLength / 2,
-    handOffset = cos(90 + cradleAngle) * cradleApothem * 2
+    yOffset = -cos(90 + cradleAngle) * cradleLength / 2
   ) {
     // This translation places us along the edge of the cradle.
     translate([0, yOffset, zOffset]) {
@@ -112,7 +138,7 @@ module hexHands(thickness) {
       // We have virtually no depth and cut off the hexagonal shape halfway
       // through its edge.
       rotate(a=90 + cradleAngle, v=[1,0,0]) {
-        translate([0, 0, cradleLength / 2]) {
+        translate([0, 0, cradleLength / 2 + cradleThickness / 2]) {
           let(xOffset = cos(30) * cradleApothem * 2) {
             translate([xOffset, 0, 0])
               rotate(a=60, v=[0, 0, 1])
@@ -124,10 +150,10 @@ module hexHands(thickness) {
               halfHexHand(-1);
           }
         }
-            hexHandButtress(1);
-            hexHandButtress(-1);
-        /* translate([0, cradleApothem * -2, 0]) */
-        /* hexHandButtress(-1); */
+        translate([0, 0, cradleThickness / 2]) {
+          hexHandButtress(1);
+          hexHandButtress(-1);
+        }
       }
     }
   }
@@ -137,7 +163,7 @@ module hexHands(thickness) {
 // horizontally adjacent cradles.
 module halfHexHand(side) {
   difference() {
-    hexCradle();
+    hexCradle(false);
     translate([0, 0, cradleThickness])
       cube(
         [cradleRadius * 2, cradleRadius * 2, cradleLength],
@@ -146,8 +172,9 @@ module halfHexHand(side) {
     translate([
       0,
       -cradleApothem / 2,
-      cradleLength / -2 + cradleThickness / 2
+      cradleLength / -2
     ]) {
+      translate([0,0, cradleThickness / 2])
       cube(
         [
           cradleRadius * 2,
@@ -156,7 +183,7 @@ module halfHexHand(side) {
         ],
         center = true
       );
-      translate([side * cradleRadius / 2, cradleApothem, 0])
+      translate([side * cradleRadius / 2, cradleApothem, cradleThickness / 2])
         cube(
           [
             cradleRadius,
@@ -171,7 +198,7 @@ module halfHexHand(side) {
 
 module hexHand() {
   difference() {
-    hexCradle();
+    hexCradle(false);
     translate([0, 0, cradleThickness])
       cube(
         [cradleRadius * 2, cradleRadius * 2, cradleLength],
@@ -198,15 +225,53 @@ module hexHandButtress(side) {
   translate([cradleRadius / 2 * side, 0, 0])
     rotate(a=side == 1 ? -60 : 240, v=[0, 0, 1])
   rotate(a=90, v=[1, 0, 0])
-  polygon([
-    [0,0],
-    [0, -cradleRadius],
-    [cradleRadius, 0],
-  ]);
+    // TODO: Extrude this by cradleThickness so we can avoid warnings. I think
+    // right now it assumes 1.
+    linear_extrude(height=cradleThickness, center = true)
+    polygon([
+      [0,0],
+      [0, -cradleRadius],
+      [cradleRadius - cradleThickness, 0],
+    ]);
 }
 
-hexTiltedCradle();
-hexHands(1);
+module hexCradleFull() {
+  // Disabled for now. See implementation in hexCradle for details.
+  hexTiltedCradle(false);
+  hexHands(1);
+}
+
+module hexCradleFoot() {
+  difference() {
+    translate([
+      0,
+      // Whoa. Tune carefully here. The foot is rises to mate perfectly with a
+      // cradle whose back end rests at z=0. The hands also mate against the
+      // face of the foot.
+      +cos(cradleAngle) * cradleThickness,
+      -cos(90 + cradleAngle) * cradleApothem - cradleRadius,
+    ])
+      // There may be merit in optimizing this geometry as well, but for now
+      // leave it disabled - it doesn't work yet in the case of the normal
+      // cradle.
+      hexTiltedCradle(false);
+    translate([0, 0, -cradleLength])
+      cube([cradleLength * 2, cradleLength * 2, cradleLength * 2], center = true);
+  }
+}
+
+// Override these as needed, especially from the command line to generate
+// separate models.
+showFoot=true;
+showCradle=true;
+if(showCradle) {
+  translate([0, 0, cradleFloorOffset])
+    hexCradleFull();
+}
+if(showFoot) {
+  hexCradleFoot();
+}
+
 
 preview = false;
 // End z-fighting by nudging an object over with this value.

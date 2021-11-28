@@ -1,0 +1,5 @@
+# Before adding things like .DS_Store, ignores for your editors, etc, consider
+# instead to use a global git ignore. This keeps the ignores here clean, and
+# specific to this project - not your text editor, OS, or other tooling.
+
+dist/
