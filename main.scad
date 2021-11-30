@@ -140,20 +140,30 @@ module hexHands(thickness) {
       rotate(a=90 + cradleAngle, v=[1,0,0]) {
         translate([0, 0, cradleLength / 2 + cradleThickness / 2]) {
           let(xOffset = cos(30) * cradleApothem * 2) {
-            translate([xOffset, 0, 0])
-              rotate(a=60, v=[0, 0, 1])
-              halfHexHand(1);
-            translate([0, -cradleApothem, 0])
-              hexHand();
-            translate([-xOffset, 0, 0])
-              rotate(a=-60, v=[0, 0, 1])
-              halfHexHand(-1);
+            /* translate([xOffset, 0, 0]) */
+            /*   rotate(a=60, v=[0, 0, 1]) */
+            /*   halfHexHand(1); */
+            translate([
+              0,
+              -thickness / 2,
+              cradleLength / -2 + cradleThickness / 2,
+            ]) {
+              let(x = cradleRadius / 2 - thickness / 2) {
+                translate([x, 0, 0])
+                  hexFinger(thickness);
+                translate([-x, 0, 0])
+                  hexFinger(thickness);
+              }
+            }
+            /* translate([-xOffset, 0, 0]) */
+            /*   rotate(a=-60, v=[0, 0, 1]) */
+            /*   halfHexHand(-1); */
           }
         }
-        translate([0, 0, cradleThickness / 2]) {
-          hexHandButtress(1);
-          hexHandButtress(-1);
-        }
+        /* translate([0, 0, cradleThickness / 2]) { */
+        /*   hexHandButtress(1); */
+        /*   hexHandButtress(-1); */
+        /* } */
       }
     }
   }
@@ -196,6 +206,10 @@ module halfHexHand(side) {
   }
 }
 
+module hexFinger(thickness) {
+  cube([thickness, thickness, thickness], center=true);
+}
+
 module hexHand() {
   difference() {
     hexCradle(false);
@@ -235,10 +249,37 @@ module hexHandButtress(side) {
     ]);
 }
 
+// This increases surface area on the bottom, which should make for a more
+// reliable print. I have noticed that it can easily come off while printing
+// when only a single line is connecting with the ground.
+module hexTiltedCradleSupport() {
+  let(
+    supportHeight = -cos( cradleAngle) * (bottleCapWideDiameter / 2 - cradleApothem),
+    supportLength = -sin(cradleAngle) * (bottleCapWideDiameter / 2 - cradleApothem)
+  ) {
+    translate([
+      0,
+      -cos(90 - cradleAngle) * cradleFloorOffset + supportLength + zPeace,
+      0,
+    ])
+      rotate(a=90, v=[1, 0, 0])
+      rotate(a=90, v=[0, 1, 0])
+      linear_extrude(center=true, height=cradleRadius)
+      // Ugh, this is a mess. Clean it up someday.
+      polygon([
+        [-(supportLength + zPeace), (supportHeight + zPeace)],
+        [-(supportLength + zPeace) * 2, 0],
+        [0, 0],
+      ]);
+  }
+}
+
 module hexCradleFull() {
   // Disabled for now. See implementation in hexCradle for details.
   hexTiltedCradle(false);
   hexHands(1);
+  /* translate([0, 0, -cradleFloorOffset]) */
+  /*   hexTiltedCradleSupport(); */
 }
 
 module hexCradleFoot() {
@@ -264,12 +305,20 @@ module hexCradleFoot() {
 // separate models.
 showFoot=true;
 showCradle=true;
+layFlat=false;
 if(showCradle) {
-  translate([0, 0, cradleFloorOffset])
-    hexCradleFull();
+  if(layFlat) {
+    rotate(a=90 - cradleAngle, v=[1, 0, 0])
+      hexCradleFull();
+  }
+  else {
+    translate([0, 0, cradleFloorOffset])
+      hexCradleFull();
+  }
 }
 if(showFoot) {
-  hexCradleFoot();
+  color("yellow")
+    hexCradleFoot();
 }
 
 
@@ -277,7 +326,7 @@ preview = false;
 // End z-fighting by nudging an object over with this value.
 zPeace = 0.01;
 
-include <diagonal-frame-joint.scad>
-include <peg-press-fit-joint.scad>
-include <fastener-joint.scad>
-include <annular-joint.scad>
+/* include <diagonal-frame-joint.scad> */
+/* include <peg-press-fit-joint.scad> */
+/* include <fastener-joint.scad> */
+/* include <annular-joint.scad> */

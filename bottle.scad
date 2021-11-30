@@ -6,18 +6,18 @@
 // I measured 26mm diameter, but add a little more.
 bottleBodyDiameterVallejo=27.0;
 bottleCapHeight=28;
+bottleCapWideDiameter=19;
 // Vallejo, Army Painter, and Reaper all use the same cap sizes.
 module bottleCap() {
   neckNarrowDiameter=8.5;
   neckNarrowHeight=12;
-  neckWideDiameter=19;
   neckWideHeight=17;
   translate([0, 0, neckWideHeight / 2]) {
     translate([
       0, 0, neckNarrowHeight,
     ])
       cylinder(d=neckNarrowDiameter, h=neckNarrowHeight, center = true);
-    cylinder(d=neckWideDiameter, h=neckWideHeight, center = true);
+    cylinder(d=bottleCapWideDiameter, h=neckWideHeight, center = true);
   }
 }
 
