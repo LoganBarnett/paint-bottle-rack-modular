@@ -97,3 +97,27 @@ if(preview) {
     }
   }
 }
+
+frameHorizontalGap=17.5;
+frameWidth=10;
+frameDepth=10;
+jointHeight=10;
+strutHeight=50;
+module strut() {
+  translate([0, 0, jointHeight / 2])
+    cube([frameWidth, frameDepth, strutHeight - jointHeight], center = true);
+}
+
+
+module fourLegsFrame() {
+  let(jointSize = [frameWidth, frameDepth, jointHeight]) {
+    translate([frameHorizontalGap, -frameHorizontalGap, 0])
+      strutStarboardWithAnnular(jointSize, 10);
+    translate([-frameHorizontalGap, -frameHorizontalGap, 0])
+      strutPortWithAnnular(jointSize, 10);
+    translate([frameHorizontalGap, frameHorizontalGap, 0])
+      strutStarboardWithAnnular(jointSize, 0);
+    translate([-frameHorizontalGap, frameHorizontalGap, 0])
+      strutPortWithAnnular(jointSize, 0);
+  }
+}

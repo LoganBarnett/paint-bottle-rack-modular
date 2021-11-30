@@ -36,19 +36,18 @@ module flexClip() {
 
 include <bottle.scad>
 
-frameHorizontalGap=17.5;
 cradleThickness=1;
 // Unusual vocabulary: The apothem is the radius of a regular polygon from the
 // center to the middle of the flat edge, and the nearest point from center.
 // This comes up quite a bit when dealing with a hexagonal cradle.
 apothemFactor=pow(3, 1/2) / 2;
+cradleApothem=(bottleBodyDiameterVallejo / 2);
 // This gives us a very direct relationship with the cradleThickness, so we can
 // be sure the thinnest point is described by the thickness. A thickness of 0
 // would mean that the midpoint of each side would have a thickness of 0 (which
 // would not be printable).
-cradleRadius=cradleThickness + (bottleBodyDiameterVallejo / 2) / apothemFactor;
-cradleApothem=cradleRadius * apothemFactor;
-cradleLength=50;
+cradleRadius=cradleApothem / apothemFactor + cradleThickness;
+cradleLength=40;
 cradleAngle=35;
 cradleHandOffset=cos(90 + cradleAngle) * cradleApothem * 2;
 cradleFloorOffset=
@@ -57,35 +56,13 @@ cradleFloorOffset=
   /* + cos(cradleAngle) * cradleThickness */
   /* - cos(90 + cradleAngle) * cradleLength */
   ;
-frameWidth=10;
-frameDepth=10;
-jointHeight=10;
-strutHeight=50;
-module strut() {
-  translate([0, 0, jointHeight / 2])
-    cube([frameWidth, frameDepth, strutHeight - jointHeight], center = true);
-}
-
-module fourLegsFrame() {
-  let(jointSize = [frameWidth, frameDepth, jointHeight]) {
-    translate([frameHorizontalGap, -frameHorizontalGap, 0])
-      strutStarboardWithAnnular(jointSize, 10);
-    translate([-frameHorizontalGap, -frameHorizontalGap, 0])
-      strutPortWithAnnular(jointSize, 10);
-    translate([frameHorizontalGap, frameHorizontalGap, 0])
-      strutStarboardWithAnnular(jointSize, 0);
-    translate([-frameHorizontalGap, frameHorizontalGap, 0])
-      strutPortWithAnnular(jointSize, 0);
-  }
-}
-
 module hexCradle(reducedMaterial) {
   difference() {
     let($fn=6) {
       color("red")
         cylinder(r=cradleRadius, h=cradleLength, center=true);
     }
-    translate([0, 0, 10])
+    translate([0, 0, -10])
       bottleVallejo();
     // THis still needs some work. I'd like it to play nice with the hands and
     // also work two dimensionally across the surface. I do need to verify
@@ -112,57 +89,48 @@ module hexCradle(reducedMaterial) {
 
 
 module hexTiltedCradle(reducedMaterial) {
-  difference() {
-    rotate(a=90 + cradleAngle, v=[1,0,0]) {
-      hexCradle(reducedMaterial);
-    }
-  }
+  rotate(a=90 + cradleAngle, v=[1,0,0])
+    hexCradle(reducedMaterial);
 }
 
 module hexHands(thickness) {
   // We want to know the point at which two stacked cradles will line up,
-  // assuming the staccking involves no movement along the y axis. From here, we
+  // assuming the stacking involves no movement along the y axis. From here, we
   // can make small hands with which to grasp the lower cradle. This should line
   // up perfectly with the top of the bottom cradle.
   let (
     // In a perfect hexagon, the side length and the radius are the same. The
     // radius is also the height, which we use as a z offset here. I don't quite
     // understand why it needs to be divided by two.
-    zOffset = -cradleApothem / 2,
+    zOffset = -cradleRadius / 2,
     yOffset = -cos(90 + cradleAngle) * cradleLength / 2
   ) {
     // This translation places us along the edge of the cradle.
-    translate([0, yOffset, zOffset]) {
+    /* translate([0, yOffset, zOffset]) { */
+    translate([
+      0,
+      /* -(cradleApothem + cradleThickness) - thickness / 2, */
+      -thickness / 2 - cradleApothem - cradleThickness / 2,
+      -thickness / 2,
+    ]) {
       // A handy marker for debugging. Keep around.
       /* sphere(3); */
       // We have virtually no depth and cut off the hexagonal shape halfway
       // through its edge.
-      rotate(a=90 + cradleAngle, v=[1,0,0]) {
-        translate([0, 0, cradleLength / 2 + cradleThickness / 2]) {
-          let(xOffset = cos(30) * cradleApothem * 2) {
-            /* translate([xOffset, 0, 0]) */
-            /*   rotate(a=60, v=[0, 0, 1]) */
-            /*   halfHexHand(1); */
-            translate([
-              0,
-              -thickness / 2,
-              cradleLength / -2 + cradleThickness / 2,
-            ]) {
-              let(x = cradleRadius / 2 - thickness / 2) {
-                translate([x, 0, 0])
-                  hexFinger(thickness);
-                translate([-x, 0, 0])
-                  hexFinger(thickness);
-              }
+      /* rotate(a=90 + cradleAngle, v=[1,0,0]) { */
+          translate([
+            0,
+            /* -thickness * 1.5, */
+            0,
+            0,
+            /* -(cradleLength / 2 - thickness / 2), */
+          ]) {
+            let(x = cradleRadius / 2 - thickness / 2) {
+              translate([x, 0, 0])
+                hexFinger(thickness);
+              translate([-x, 0, 0])
+                hexFinger(thickness);
             }
-            /* translate([-xOffset, 0, 0]) */
-            /*   rotate(a=-60, v=[0, 0, 1]) */
-            /*   halfHexHand(-1); */
-          }
-        }
-        /* translate([0, 0, cradleThickness / 2]) { */
-        /*   hexHandButtress(1); */
-        /*   hexHandButtress(-1); */
         /* } */
       }
     }
@@ -275,27 +243,33 @@ module hexTiltedCradleSupport() {
 }
 
 module hexCradleFull() {
-  // Disabled for now. See implementation in hexCradle for details.
-  hexTiltedCradle(false);
-  hexHands(1);
+  // I had a hard time getting the trig functions to do what I expected, maybe
+  // because I should have used apothem+thickness, which I think is the only
+  // permutation I didn't try. For now, just do a couple of rotations.
+  // Doing these rotations makes the hexFingers significantly easier.
+  rotate(a=-90 + cradleAngle, v=[1,0,0])
+    translate([
+      0,
+      -(cradleApothem + cradleThickness),
+      cradleLength / 2,
+    ])
+    rotate(a=180, v=[1, 0, 0]) {
+    // Disabled for now. See implementation in hexCradle for details.
+    #hexCradle(false);
+    hexHands(1.5);
+  }
   /* translate([0, 0, -cradleFloorOffset]) */
   /*   hexTiltedCradleSupport(); */
 }
 
 module hexCradleFoot() {
   difference() {
-    translate([
-      0,
-      // Whoa. Tune carefully here. The foot is rises to mate perfectly with a
-      // cradle whose back end rests at z=0. The hands also mate against the
-      // face of the foot.
-      +cos(cradleAngle) * cradleThickness,
-      -cos(90 + cradleAngle) * cradleApothem - cradleRadius,
-    ])
+    rotate(a=90 + cradleAngle, v=[1,0,0])
+      translate([0, -(cradleApothem + cradleThickness), 0])
       // There may be merit in optimizing this geometry as well, but for now
       // leave it disabled - it doesn't work yet in the case of the normal
       // cradle.
-      hexTiltedCradle(false);
+      #hexCradle(false);
     translate([0, 0, -cradleLength])
       cube([cradleLength * 2, cradleLength * 2, cradleLength * 2], center = true);
   }
@@ -312,7 +286,7 @@ if(showCradle) {
       hexCradleFull();
   }
   else {
-    translate([0, 0, cradleFloorOffset])
+    /* translate([0, 0, cradleFloorOffset]) */
       hexCradleFull();
   }
 }
