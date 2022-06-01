@@ -47,8 +47,8 @@ cradleApothem=(bottleBodyDiameterVallejo / 2);
 // would mean that the midpoint of each side would have a thickness of 0 (which
 // would not be printable).
 cradleRadius=cradleApothem / apothemFactor + cradleThickness;
-cradleLength=40;
-cradleAngle=35;
+cradleLength=50;
+cradleAngle=45;
 cradleHandOffset=cos(90 + cradleAngle) * cradleApothem * 2;
 cradleFloorOffset=
   -cos(90 + cradleAngle) * cradleRadius + cradleRadius
@@ -62,7 +62,7 @@ module hexCradle(reducedMaterial) {
       color("red")
         cylinder(r=cradleRadius, h=cradleLength, center=true);
     }
-    translate([0, 0, -10])
+    translate([0, 0, -4])
       bottleVallejo();
     // THis still needs some work. I'd like it to play nice with the hands and
     // also work two dimensionally across the surface. I do need to verify
@@ -255,7 +255,7 @@ module hexCradleFull() {
     ])
     rotate(a=180, v=[1, 0, 0]) {
     // Disabled for now. See implementation in hexCradle for details.
-    #hexCradle(false);
+    hexCradle(false);
     hexHands(1.5);
   }
   /* translate([0, 0, -cradleFloorOffset]) */
@@ -269,7 +269,7 @@ module hexCradleFoot() {
       // There may be merit in optimizing this geometry as well, but for now
       // leave it disabled - it doesn't work yet in the case of the normal
       // cradle.
-      #hexCradle(false);
+      hexCradle(false);
     translate([0, 0, -cradleLength])
       cube([cradleLength * 2, cradleLength * 2, cradleLength * 2], center = true);
   }
