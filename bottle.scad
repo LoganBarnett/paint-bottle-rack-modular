@@ -6,7 +6,9 @@
 // I measured 26mm diameter, but add a little more.
 bottleBodyDiameterVallejo=27.0;
 bottleCapHeight=28;
-bottleCapWideDiameter=19;
+bottleCapWideDiameterMeasured=19;
+// Increase the measured diameter to make it fit better.
+bottleCapWideDiameter = bottleCapWideDiameterMeasured + 3;
 // Vallejo, Army Painter, and Reaper all use the same cap sizes.
 module bottleCap() {
   neckNarrowDiameter=8.5;
